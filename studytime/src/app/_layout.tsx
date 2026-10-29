@@ -4,27 +4,25 @@ import { Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { AnimatedSplash } from '@/components/AnimatedSplash';
+import { AuthProvider, useAuth } from '@/contexts/auth';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [appReady, setAppReady] = useState(false);
+  return (
+    <AuthProvider>
+      <Root />
+    </AuthProvider>
+  );
+}
+
+function Root() {
+  const { loading } = useAuth();
   const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
-    async function prepare() {
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      } finally {
-        setAppReady(true);
-      }
-    }
-    prepare();
-  }, []);
-
-  useEffect(() => {
-    if (appReady) SplashScreen.hideAsync();
-  }, [appReady]);
+    if (!loading) SplashScreen.hideAsync();
+  }, [loading]);
 
   return (
     <View style={{ flex: 1 }}>

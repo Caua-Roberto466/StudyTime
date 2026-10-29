@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import * as Crypto from 'expo-crypto'
 
 export type User = { id: number; name: string; email: string };
 
@@ -53,4 +54,28 @@ export async function startSession(userId: number) {
 export async function endSession() {
   const db = await getDb();
   await db.runAsync('DELETE FROM session');
+}
+
+export async function hashPassword(password: string){
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password)
+}
+
+export async function createUser(name: string, email: string, password: string){
+  const db = await getDb()
+  const hash = await hashPassword(password)
+  const result = await db.runAsync(
+    'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)', 
+    name, email, hash
+  )
+  return result.lastInsertRowId
+}
+
+export async function verifyLogin(email: string, password: string): Promise<number | null>{
+  const db = await getDb()
+  const hash = await hashPassword(password)
+  const row = await db.getFirstAsync<{id: number}>(
+    'SELECT id FROM users WHERE email = ? AND password_hash = ?',
+    email, hash
+  )
+  return row ? row.id : null
 }
