@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "studytime",
+    "name": "StudyTime",
     "slug": "StudyTime",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/StudyTime-splash.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#7C3AED"
       },
       "predictiveBackGestureEnabled": false,
