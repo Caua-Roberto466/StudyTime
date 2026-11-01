@@ -2,6 +2,7 @@ import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { useAuth } from '@/contexts/auth';
+import { ScreenLayout } from '@/components/ScreenLayout';
 
 export default function Home() {
   const { user, loading, signOut } = useAuth();
@@ -10,26 +11,19 @@ export default function Home() {
   if (!user) return <Redirect href="/login" />;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Olá, {user.name}!</Text>
-      <Text style={styles.email}>{user.email}</Text>
-
-      <TouchableOpacity style={styles.button} onPress={signOut}>
-        <Text style={styles.buttonText}>Sair (teste)</Text>
-      </TouchableOpacity>
-    </View>
+    <ScreenLayout>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 20, color: colors.text }}>Olá, {user.name}!</Text>
+        <Text style={{ color: colors.text }}>{user.email}</Text>
+        <TouchableOpacity style={styles.button} onPress={signOut}>
+          <Text style={styles.buttonText}>Sair (teste)</Text>
+        </TouchableOpacity>
+      </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: { fontSize: 20, color: colors.text },
-  email: { color: colors.text, marginTop: 4 },
   button: {
     backgroundColor: colors.primary,
     borderRadius: 12,

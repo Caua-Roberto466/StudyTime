@@ -1,69 +1,110 @@
-import { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, Alert } from "react-native";
-import { router } from "expo-router";
-import { colors } from "@/theme/colors";
-import { verifyLogin } from "@/database/db";
-import { useAuth } from "@/contexts/auth";
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Login(){
-    const { signIn } = useAuth()
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+import { colors } from '@/theme/colors';
+import { verifyLogin } from '@/database/db';
+import { useAuth } from '@/contexts/auth';
+import { AuthScreen } from '@/components/AuthScreeen';
+import { AppLogo } from '@/components/AppLogo';
+import { Input } from '@/components/Input';
+import { Button } from '@/components/Button';
 
-    async function handleLogin(){
-        const id = await verifyLogin(email.trim().toLowerCase(), password)
-        if(id === null){
-            Alert.alert("Erro! Email ou senha incorretos")
-            return
-        }
-        await signIn(id)
-        router.replace('/')
+export default function Login() {
+  const { signIn } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email.trim() || !password) {
+      Alert.alert('Atenção', 'Preencha e-mail e senha.');
+      return;
     }
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Entrar</Text>
+    setLoading(true);
+    try {
+      const id = await verifyLogin(email.trim().toLowerCase(), password);
+      if (id === null) {
+        Alert.alert('Erro', 'E-mail ou senha incorretos.');
+        return;
+      }
+      await signIn(id);
+      router.replace('/');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-            <TextInput
-                style={styles.input}
-                placeholder="E-mail"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Senha"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+  return (
+    <AuthScreen>
+      <View style={styles.header}>
+        <AppLogo />
+        <Text style={styles.title}>StudyTime</Text>
+        <Text style={styles.subtitle}>Faça login para continuar</Text>
+      </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>Entrar</Text>
-            </TouchableOpacity>
+      <Input
+        icon="mail-outline"
+        placeholder="E-mail"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      />
+      <Input
+        icon="lock-closed-outline"
+        placeholder="Senha"
+        value={password}
+        onChangeText={setPassword}
+        isPassword
+      />
 
-            <TouchableOpacity onPress={() => router.replace('/cadastro')}>
-                <Text style={styles.link}>Criar uma conta</Text>
-            </TouchableOpacity>
-        </View>
-    )
+      <Button label="Entrar" onPress={handleLogin} loading={loading} />
+
+      <View style={styles.divider}>
+        <View style={styles.line} />
+        <Text style={styles.dividerText}>ou continue com</Text>
+        <View style={styles.line} />
+      </View>
+
+      <View style={styles.social}>
+        <Pressable
+          style={styles.socialButton}
+          onPress={() => Alert.alert('Em breve', 'Login com Google ainda não disponível.')}>
+          <Ionicons name="logo-google" size={22} color={colors.text} />
+        </Pressable>
+        <Pressable
+          style={styles.socialButton}
+          onPress={() => Alert.alert('Em breve', 'Login com Apple ainda não disponível.')}>
+          <Ionicons name="logo-apple" size={24} color={colors.text} />
+        </Pressable>
+      </View>
+
+      <Pressable onPress={() => router.replace('/cadastro')}>
+        <Text style={styles.link}>Criar uma conta</Text>
+      </Pressable>
+    </AuthScreen>
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 24 },
-  input: {
+  header: { alignItems: 'center', marginBottom: 32 },
+  title: { fontSize: 32, fontWeight: '800', color: colors.text, marginTop: 16 },
+  subtitle: { fontSize: 15, color: '#6B7280', marginTop: 4 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 24 },
+  line: { flex: 1, height: 1, backgroundColor: colors.secondary },
+  dividerText: { color: '#6B7280', fontSize: 13 },
+  social: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 24 },
+  socialButton: {
+    flex: 1,
+    height: 52,
     backgroundColor: '#fff',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.secondary,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    color: colors.text,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  button: { backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  link: { color: colors.primary, textAlign: 'center', marginTop: 16 },
+  link: { color: colors.primary, fontWeight: '700', textAlign: 'center', fontSize: 15 },
 });

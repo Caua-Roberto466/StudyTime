@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "studytime",
-    "slug": "studytime",
+    "slug": "StudyTime",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/StudyTime-splash.png",
+    "icon": "./assets/icon.png",
     "scheme": "studytime",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -13,10 +13,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/StudyTime-splash.png",
-        "backgroundImage": "./assets/StudyTime-splash.png",
-        "monochromeImage": "./assets/StudyTime-splash.png"
+        "backgroundColor": "#7C3AED"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.studytime"

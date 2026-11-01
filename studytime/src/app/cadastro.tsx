@@ -1,78 +1,108 @@
-import { useState } from "react"
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, Alert } from "react-native"
-import { router } from 'expo-router'
-import { colors } from "@/theme/colors";
-import { createUser } from "@/database/db";
-import { useAuth } from '@/contexts/auth'
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Cadastro(){
-    const { signIn } = useAuth()
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+import { colors } from '@/theme/colors';
+import { createUser } from '@/database/db';
+import { useAuth } from '@/contexts/auth';
+import { AuthScreen } from '@/components/AuthScreeen';
+import { Input } from '@/components/Input';
+import { Button } from '@/components/Button';
 
-    async function handleCadastro(){
-        if(!name.trim() || !email.trim() || !password.trim()){
-            Alert.alert("Atenção, preencha todos os campos")
-            return
-        }else if(password.length < 6){
-            Alert.alert("Atenção, a senha deve ter 6 caracteres ou mais")
-            return
-        }
-        try{
-            const id = await createUser(name.trim(), email.trim().toLowerCase(), password)
-            await signIn(id)
-            router.replace('/')
-        }catch (e){
-            Alert.alert("Email já cadastrado")
-        }
+export default function Cadastro() {
+  const { signIn } = useAuth();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleCadastro() {
+    if (!name.trim() || !email.trim() || !password) {
+      Alert.alert('Atenção', 'Preencha todos os campos.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Atenção', 'A senha precisa de ao menos 6 caracteres.');
+      return;
+    }
+    if (password !== confirm) {
+      Alert.alert('Atenção', 'As senhas não conferem.');
+      return;
     }
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Criar Conta</Text>
+    setLoading(true);
+    try {
+      const id = await createUser(name.trim(), email.trim().toLowerCase(), password);
+      await signIn(id);
+      router.replace('/');
+    } catch {
+      // o UNIQUE do e-mail faz o banco lançar erro se já existir
+      Alert.alert('Erro', 'Esse e-mail já está cadastrado.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-            <TextInput style={styles.input} placeholder="Nome" value={name} onChangeText={setName} />
-            <TextInput
-                style={styles.input}
-                placeholder="E-mail"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Senha"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+  return (
+    <AuthScreen>
+      <Pressable
+        onPress={() => router.replace('/login')}
+        hitSlop={12}
+        style={styles.back}>
+        <Ionicons name="arrow-back" size={26} color={colors.text} />
+      </Pressable>
 
-            <TouchableOpacity style={styles.button} onPress={handleCadastro}>
-                <Text style={styles.buttonText}>Cadastrar</Text>
-            </TouchableOpacity>
+      <Text style={styles.title}>Criar conta</Text>
+      <Text style={styles.subtitle}>Preencha os dados abaixo</Text>
 
-            <TouchableOpacity onPress={() => router.replace('/login')}>
-                <Text style={styles.link}>Já tenho uma conta</Text>
-            </TouchableOpacity>
-        </View>
-    )
+      <Input
+        icon="person-outline"
+        placeholder="Nome completo"
+        value={name}
+        onChangeText={setName}
+        autoCapitalize="words"
+      />
+      <Input
+        icon="mail-outline"
+        placeholder="E-mail"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      />
+      <Input
+        icon="lock-closed-outline"
+        placeholder="Senha"
+        value={password}
+        onChangeText={setPassword}
+        isPassword
+      />
+      <Input
+        icon="lock-closed-outline"
+        placeholder="Confirmar senha"
+        value={confirm}
+        onChangeText={setConfirm}
+        isPassword
+      />
+
+      <Button label="Cadastrar" onPress={handleCadastro} loading={loading} />
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Já possui uma conta? </Text>
+        <Pressable onPress={() => router.replace('/login')}>
+          <Text style={styles.link}>Entrar</Text>
+        </Pressable>
+      </View>
+    </AuthScreen>
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 24 },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    color: colors.text,
-  },
-  button: { backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  link: { color: colors.primary, textAlign: 'center', marginTop: 16 },
+  back: { alignSelf: 'flex-start', marginBottom: 24 },
+  title: { fontSize: 32, fontWeight: '800', color: colors.text },
+  subtitle: { fontSize: 15, color: '#6B7280', marginTop: 4, marginBottom: 28 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  footerText: { color: '#6B7280', fontSize: 14 },
+  link: { color: colors.primary, fontWeight: '700', fontSize: 14, textDecorationLine: 'underline' },
 });

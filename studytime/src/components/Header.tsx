@@ -12,7 +12,7 @@ export function Header(){
         <View style={[styles.container, { padding: insets.top + 8 }]}>
             <View style={styles.brand}>
                 <Image
-                    source={require('../../assets/StudyTime-logo.png')}
+                    source={require('../../assets/StudyTime-splash.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { width: 32, height: 32 },
+  logo: { width: 40, height: 40, borderRadius: 10 },
   title: { color: colors.background, fontSize: 20, fontWeight: '700' },
   avatar: {
     width: 36,

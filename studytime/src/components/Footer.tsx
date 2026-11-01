@@ -8,7 +8,7 @@ const items = [
     {label: 'Iício', icon: 'home-outline', href: '/'},
     {label: 'Estudar', icon: 'timer-outline', href: '/estudar'},
     {label: 'Perfil', icon: 'person-outline', href: '/perfil'}
-]
+] as const
 
 export function Footer(){
     const insets = useSafeAreaInsets()
