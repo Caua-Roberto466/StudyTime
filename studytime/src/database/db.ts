@@ -16,6 +16,7 @@ export async function initDb() {
   const db = await getDb();
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
 
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,6 +30,31 @@ export async function initDb() {
       id INTEGER PRIMARY KEY CHECK (id = 1),
       user_id INTEGER NOT NULL REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      notification_id TEXT,
+      title TEXT NOT NULL,
+      sent INTEGER NOT NULL DEFAULT 0,
+      scheduled_date TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS activities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      data_entrega TEXT NOT NULL,            -- ISO: 2026-11-03T14:00
+      description TEXT,
+      priority TEXT NOT NULL DEFAULT 'Média'
+        CHECK (priority IN ('Alta', 'Média', 'Baixa')),
+      reminder INTEGER NOT NULL DEFAULT 0,   -- 0 ou 1
+      completed INTEGER NOT NULL DEFAULT 0,  -- 0 ou 1
+      url_image TEXT,                        -- JSON de URLs
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      notifications_id INTEGER REFERENCES notifications(id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_activities_user_date
+      ON activities (user_id, data_entrega);
   `);
 }
 
