@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto'
+import { toLocalISO } from '@/utils/dates';
 
 export type User = { id: number; name: string; email: string };
 
@@ -104,4 +105,71 @@ export async function verifyLogin(email: string, password: string): Promise<numb
     email, hash
   )
   return row ? row.id : null
+}
+
+export type Priority = 'Alta' | 'Média' | 'Baixa';
+
+export type Activity = {
+  id: number;
+  name: string;
+  data_entrega: string;
+  priority: Priority;
+  completed: number; // 0 ou 1
+};
+
+// "7 de 10": total e concluídas dentro de um intervalo de datas
+export async function getWeekProgress(userId: number, start: string, end: string) {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ total: number; done: number }>(
+    `SELECT COUNT(*) AS total,
+            COALESCE(SUM(completed), 0) AS done
+       FROM activities
+      WHERE user_id = ? AND data_entrega >= ? AND data_entrega < ?`,
+    userId, start, end
+  );
+  return row ?? { total: 0, done: 0 };
+}
+
+// Próximas pendentes, da mais próxima para a mais distante
+export async function getUpcomingActivities(userId: number, from: string, limit = 3) {
+  const db = await getDb();
+  return db.getAllAsync<Activity>(
+    `SELECT id, name, data_entrega, priority, completed
+       FROM activities
+      WHERE user_id = ? AND completed = 0 AND data_entrega >= ?
+      ORDER BY data_entrega ASC
+      LIMIT ?`,
+    userId, from, limit
+  );
+}
+
+// TEMPORÁRIO: cria atividades de exemplo até existir a tela "Nova atividade"
+export async function seedDemoActivities(userId: number) {
+  const db = await getDb();
+  const count = await db.getFirstAsync<{ n: number }>(
+    'SELECT COUNT(*) AS n FROM activities WHERE user_id = ?', userId
+  );
+  if (count && count.n > 0) return;
+
+  const at = (days: number, hour: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    d.setHours(hour, 0, 0, 0);
+    return toLocalISO(d);
+  };
+
+  const rows: [string, string, Priority, number][] = [
+    ['Prova de Matemática', at(0, 23), 'Alta', 0],
+    ['Trabalho de Programação', at(1, 9), 'Média', 0],
+    ['Revisão de Biologia', at(2, 19), 'Baixa', 0],
+    ['Lista de Exercícios', at(0, 8), 'Baixa', 1],
+  ];
+
+  for (const [name, due, priority, completed] of rows) {
+    await db.runAsync(
+      `INSERT INTO activities (name, data_entrega, priority, completed, user_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      name, due, priority, completed, userId
+    );
+  }
 }
