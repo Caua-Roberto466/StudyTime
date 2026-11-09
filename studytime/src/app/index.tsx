@@ -6,8 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { useAuth } from '@/contexts/auth';
 import {
-  Activity, getUpcomingActivities, getWeekProgress, seedDemoActivities,
-} from '@/database/db';
+  Activity, getUpcomingActivities, getWeekProgress} from '@/database/db';
 import { getWeekRange, toLocalISO } from '@/utils/dates';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ProgressRing } from '@/components/ProgressingRing';
@@ -26,7 +25,6 @@ export default function Home() {
       let active = true;
 
       async function load() {
-        await seedDemoActivities(userId!); // TEMPORÁRIO: remover quando existir "Nova atividade"
         const { start, end } = getWeekRange();
         const [p, list] = await Promise.all([
           getWeekProgress(userId!, start, end),
@@ -88,7 +86,7 @@ export default function Home() {
         </View>
 
         {upcoming.length === 0 ? (
-          <Text style={styles.empty}>Nenhuma atividade pendente 🎉</Text>
+          <Text style={styles.empty}>Nenhuma atividade pendente. Adicione a primeira abaixo 👇</Text>
         ) : (
           upcoming.map((a) => <ActivityCard key={a.id} activity={a} />)
         )}

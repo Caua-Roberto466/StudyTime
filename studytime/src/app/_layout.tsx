@@ -1,8 +1,10 @@
+// src/app/_layout.tsx
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { colors } from '@/theme/colors';
 import { AnimatedSplash } from '@/components/AnimatedSplash';
 import { AuthProvider, useAuth } from '@/contexts/auth';
 
@@ -26,7 +28,14 @@ function Root() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Slot />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          contentStyle: { backgroundColor: colors.background },
+        }}>
+        <Stack.Screen name="nova-atividade" options={{ animation: 'slide_from_right' }} />
+      </Stack>
       {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
     </View>
   );

@@ -17,7 +17,11 @@
         "backgroundColor": "#7C3AED"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.studytime"
+      "package": "com.anonymous.studytime",
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "web": {
       "output": "server",
@@ -34,7 +38,16 @@
         }
       ],
       "expo-sqlite",
-      "expo-image"
+      "expo-image",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O StudyTime acessa suas fotos para anexar às atividades.",
+          "cameraPermission": "O StudyTime usa a câmera para fotografar suas atividades."
+        }
+      ],
+      ["expo-calendar", { "calendarPermission": "O StudyTime adiciona suas entregas à agenda." }]
     ],
     "experiments": {
       "typedRoutes": true,

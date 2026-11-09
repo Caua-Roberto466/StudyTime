@@ -1,28 +1,38 @@
-import { Image, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "@/theme/colors";
-import { useAuth } from "@/contexts/auth";
+// src/components/Header.tsx
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/theme/colors';
+import { useAuth } from '@/contexts/auth';
 
-export function Header(){
-    const insets = useSafeAreaInsets();
-    const { user } = useAuth();
-    const initial: string = (user?.name ?? '?').charAt(0).toUpperCase();
+type Props = { onBack?: () => void };
 
-    return (
-        <View style={[styles.container, { padding: insets.top + 8 }]}>
-            <View style={styles.brand}>
-                <Image
-                    source={require('../../assets/StudyTime-splash.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
-                <Text style={styles.title}>StudyTime</Text>
-            </View>
-            <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initial}</Text>
-            </View>
-        </View>
-    )
+export function Header({ onBack }: Props) {
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const initial = user?.name?.charAt(0).toUpperCase() ?? '?';
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={styles.brand}>
+        {onBack && (
+          <Pressable onPress={onBack} hitSlop={12}>
+            <Ionicons name="arrow-back" size={24} color={colors.background} />
+          </Pressable>
+        )}
+        <Image
+          source={require('../../assets/StudyTime-splash.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>StudyTime</Text>
+      </View>
+
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{initial}</Text>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -34,16 +44,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { width: 40, height: 40, borderRadius: 10 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logo: { width: 32, height: 32 },
   title: { color: colors.background, fontSize: 20, fontWeight: '700' },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { color: colors.primary, fontWeight: '700', fontSize: 16 },
 });
