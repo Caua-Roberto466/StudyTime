@@ -35,6 +35,7 @@ function Root() {
           contentStyle: { backgroundColor: colors.background },
         }}>
         <Stack.Screen name="nova-atividade" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="materia/[id]" options={{ animation: 'slide_from_right' }} />
       </Stack>
       {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
     </View>

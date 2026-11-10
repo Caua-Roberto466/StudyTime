@@ -1,32 +1,44 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
+import { toIcon } from '@/theme/icons';
 import { Activity } from '@/database/db';
 import { formatDue } from '@/utils/dates';
-import { attachmentUri, parseAttachments } from '@/utils/attachments';
+import { parseAttachments } from '@/utils/attachments';
 
 type Props = { activity: Activity; onToggle?: () => void };
 
 export function ActivityCard({ activity, onToggle }: Props) {
   const p = colors.priority[activity.priority];
   const done = activity.completed === 1;
-  const firstImage = parseAttachments(activity.url_image)[0];
+
+  // ordem: ícone da atividade -> ícone da matéria -> livro padrão
+  const iconName = toIcon(activity.icon ?? activity.subject_icon);
+  const tint = activity.subject_color ?? colors.primary;
+  const attachments = parseAttachments(activity.url_image).length;
+
+  const due = formatDue(activity.data_entrega);
+  const subtitle = activity.subject_name ? `${activity.subject_name} · ${due}` : due;
 
   return (
     <View style={[styles.card, { borderLeftColor: p.fg }, done && styles.cardDone]}>
-      <View style={styles.icon}>
-        {firstImage ? (
-          <Image source={{ uri: attachmentUri(firstImage) }} style={styles.thumb} />
-        ) : (
-          <Ionicons name="book-outline" size={20} color={colors.primary} />
-        )}
+      <View style={[styles.icon, { backgroundColor: tint + '1A' }]}>
+        <Ionicons name={iconName} size={22} color={tint} />
       </View>
 
       <View style={{ flex: 1 }}>
         <Text style={[styles.title, done && styles.titleDone]} numberOfLines={1}>
           {activity.name}
         </Text>
-        <Text style={styles.subtitle}>{formatDue(activity.data_entrega)}</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+          {attachments > 0 && (
+            <View style={styles.clip}>
+              <Ionicons name="attach" size={14} color={colors.muted} />
+              <Text style={styles.subtitle}>{attachments}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {!done && (
@@ -55,14 +67,12 @@ const styles = StyleSheet.create({
     padding: 12, marginBottom: 10,
   },
   cardDone: { opacity: 0.6 },
-  icon: {
-    width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
-    backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center',
-  },
-  thumb: { width: 44, height: 44 },
+  icon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 14, fontWeight: '700', color: colors.text },
   titleDone: { textDecorationLine: 'line-through' },
-  subtitle: { fontSize: 12, color: colors.muted, marginTop: 2 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  subtitle: { fontSize: 12, color: colors.muted, flexShrink: 1 },
+  clip: { flexDirection: 'row', alignItems: 'center' },
   badge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 11, fontWeight: '700' },
 });

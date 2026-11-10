@@ -17,6 +17,8 @@ import { ActivityCard } from '@/components/ActivityCard';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { Input } from '@/components/Input';
 
+import { toggleActivityCompleted } from '@/utils/activityActions';
+
 type Mode = 'lista' | 'agenda';
 type Filter = 'todas' | 'pendentes' | 'concluidas';
 
@@ -77,24 +79,8 @@ export default function Estudar() {
 
   async function toggle(a: Activity) {
     if (userId === undefined) return;
-    const completing = a.completed === 0;
-    await setActivityCompleted(a.id, userId, completing);
-
-    // concluiu uma atividade que tinha alarme na agenda: remove o evento
-    let eventId = a.calendar_event_id;
-    if (completing && eventId) {
-      await removeDeadlineFromCalendar(eventId);
-      await setCalendarEventId(a.id, userId, null);
-      eventId = null;
-    }
-
-    setActivities((prev) =>
-      prev.map((x) =>
-        x.id === a.id
-          ? { ...x, completed: completing ? 1 : 0, calendar_event_id: eventId }
-          : x
-      )
-    );
+    const updated = await toggleActivityCompleted(a, userId);
+    setActivities((prev) => prev.map((x) => (x.id === a.id ? updated : x)));
   }
 
   // hooks sempre ANTES dos returns condicionais

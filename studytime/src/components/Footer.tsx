@@ -1,37 +1,45 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { router, usePathname } from "expo-router";
-import { Ionicons } from '@expo/vector-icons'
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "@/theme/colors";
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, usePathname } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/theme/colors';
 
 const items = [
-    {label: 'Iício', icon: 'home-outline', href: '/'},
-    {label: 'Estudar', icon: 'timer-outline', href: '/estudar'},
-    {label: 'Perfil', icon: 'person-outline', href: '/perfil'}
-] as const
+  { label: 'Início', icon: 'home-outline', href: '/', prefixes: ['/'] },
+  { label: 'Estudar', icon: 'timer-outline', href: '/estudar', prefixes: ['/estudar'] },
+  { label: 'Matérias', icon: 'library-outline', href: '/materias', prefixes: ['/materias', '/materia'] },
+  { label: 'Perfil', icon: 'person-outline', href: '/perfil', prefixes: ['/perfil'] },
+] as const;
 
-export function Footer(){
-    const insets = useSafeAreaInsets()
-    const pathname = usePathname()
+// '/materia/3' deve acender a aba Matérias; '/' só vale para a Home
+function isActive(pathname: string, prefixes: readonly string[]) {
+  return prefixes.some((p) =>
+    p === '/' ? pathname === '/' : pathname === p || pathname.startsWith(p + '/')
+  );
+}
 
-    return(
-        <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
-            {items.map((item) => {
-                const active = pathname === item.href;
-                const color = active ? colors.primary : '#9CA3AF';
+export function Footer() {
+  const insets = useSafeAreaInsets();
+  const pathname = usePathname();
 
-                return (
-                <Pressable
-                    key={item.href}
-                    style={styles.item}
-                    onPress={() => router.replace(item.href)}>
-                    <Ionicons name={item.icon} size={24} color={color} />
-                    <Text style={[styles.label, { color }]}>{item.label}</Text>
-                </Pressable>
-                );
-            })}
-        </View>
-    )
+  return (
+    <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
+      {items.map((item) => {
+        const active = isActive(pathname, item.prefixes);
+        const color = active ? colors.primary : '#9CA3AF';
+
+        return (
+          <Pressable
+            key={item.href}
+            style={styles.item}
+            onPress={() => router.replace(item.href)}>
+            <Ionicons name={item.icon} size={24} color={color} />
+            <Text style={[styles.label, { color }]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

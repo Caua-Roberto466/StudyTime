@@ -1,24 +1,27 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { colors } from '@/theme/colors';
+import { IconName, toIcon } from '@/theme/icons';
 import { useAuth } from '@/contexts/auth';
-import { ScreenLayout } from '@/components/ScreenLayout';
-import { goBack } from '@/utils/navigation';
-import { addDeadlineToCalendar } from '@/utils/deviceCalendar';
-import { createActivity, setCalendarEventId, Priority } from '@/database/db';
+import {
+  createActivity, DEFAULT_SETTINGS, getSettings, getSubjects, Priority,
+  setCalendarEventId, Settings, SubjectWithCount,
+} from '@/database/db';
 import { saveAttachment } from '@/utils/attachments';
+import { addDeadlineToCalendar } from '@/utils/deviceCalendar';
+import { goBack } from '@/utils/navigation';
 import { formatDate, formatTime, toLocalISO } from '@/utils/dates';
+import { ScreenLayout } from '@/components/ScreenLayout';
+import { IconPicker } from '@/components/IconPicker';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-
-
 
 const MAX_IMAGES = 5;
 const PRIORITIES: Priority[] = ['Alta', 'Média', 'Baixa'];
@@ -32,7 +35,9 @@ function defaultDue() {
 
 export default function NovaAtividade() {
   const { user, loading } = useAuth();
-  
+  const userId = user?.id;
+  // vem preenchido quando o usuário toca em "Adicionar atividade" dentro de uma matéria
+  const params = useLocalSearchParams<{ subjectId?: string }>();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -42,14 +47,46 @@ export default function NovaAtividade() {
   const [images, setImages] = useState<string[]>([]); // URIs temporárias
   const [picker, setPicker] = useState<'date' | 'time' | null>(null);
   const [saving, setSaving] = useState(false);
+  const [subjects, setSubjects] = useState<SubjectWithCount[]>([]);
+  const [subjectId, setSubjectId] = useState<number | null>(
+    params.subjectId ? Number(params.subjectId) : null
+  );
+  const [icon, setIcon] = useState<IconName | null>(null);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
+  // preferências do Perfil: definem o valor inicial do lembrete e se haverá alarme na agenda
+  useEffect(() => {
+    if (userId === undefined) return;
+    let active = true;
+    getSettings(userId).then((s) => {
+      if (!active) return;
+      setSettings(s);
+      setReminder(s.default_reminder === 1);
+    });
+    return () => { active = false; };
+  }, [userId]);
+
+  // recarrega as matérias ao voltar da tela Matérias (onde o usuário pode criar novas)
+  useFocusEffect(
+    useCallback(() => {
+      if (userId === undefined) return;
+      let active = true;
+      getSubjects(userId).then((list) => {
+        if (active) setSubjects(list);
+      });
+      return () => { active = false; };
+    }, [userId])
+  );
+
+  // hooks sempre ANTES dos returns condicionais
   if (loading) return null;
   if (!user) return <Redirect href="/login" />;
 
-  function goBack() {
-    if (router.canGoBack()) router.back();
-    else router.replace('/estudar');
-  }
+  // se a matéria foi apagada, o id fica "órfão": tratamos como sem matéria
+  const selectedSubject = subjects.find((s) => s.id === subjectId) ?? null;
+  const previewColor = selectedSubject?.color ?? colors.primary;
+  const alarmEnabled = settings.calendar_alarms === 1;
+  const noSubject = selectedSubject === null;
 
   async function pickFromGallery() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -92,7 +129,10 @@ export default function NovaAtividade() {
 
     setSaving(true);
     try {
+      // 1) copia cada imagem para a pasta permanente
       const saved = await Promise.all(images.map((uri) => saveAttachment(uri)));
+
+      // 2) grava a atividade (com matéria e ícone)
       const id = await createActivity({
         userId: user.id,
         name: title.trim(),
@@ -101,11 +141,13 @@ export default function NovaAtividade() {
         priority,
         reminder,
         images: saved,
+        subjectId: selectedSubject?.id ?? null,
+        icon,
       });
 
-      // prioridade alta: tenta colocar o alarme na agenda do celular
+      // 3) prioridade alta (e preferência ligada): alarme na agenda do celular
       let calendarOk = true;
-      if (priority === 'Alta') {
+      if (priority === 'Alta' && alarmEnabled) {
         try {
           const eventId = await addDeadlineToCalendar({
             title: title.trim(),
@@ -119,12 +161,14 @@ export default function NovaAtividade() {
         }
       }
 
+      // 4) volta para a tela anterior (a Home atualiza sozinha)
       if (calendarOk) {
+        goBack('/');
       } else {
         Alert.alert(
           'Atividade salva',
           'Não consegui criar o alarme na agenda do celular. Confira a permissão de calendário nas configurações do app.',
-          [{ text: 'OK' }]
+          [{ text: 'OK', onPress: () => goBack('/') }]
         );
       }
     } catch {
@@ -135,19 +179,12 @@ export default function NovaAtividade() {
   }
 
   return (
-    <View>
+    <ScreenLayout footer={false} onBack={() => goBack('/')}>
       <ScrollView
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
-      <Text style={styles.screenTitle}>Nova atividade</Text>
-        <View>
-          <Pressable onPress={goBack} hitSlop={12}>
-            <Ionicons name="arrow-back" size={26} color={colors.text} />
-          </Pressable>
-          <Text style={styles.screenTitle}>Nova atividade</Text>
-          <View style={{ width: 26 }} />
-        </View>
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+        <Text style={styles.screenTitle}>Nova atividade</Text>
 
         <Text style={styles.label}>Título da atividade</Text>
         <Input
@@ -157,6 +194,49 @@ export default function NovaAtividade() {
           onChangeText={setTitle}
           autoCapitalize="sentences"
         />
+
+        <Text style={styles.label}>Matéria</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 14 }}
+          contentContainerStyle={{ gap: 8 }}>
+          <Pressable
+            style={[styles.chip, noSubject && styles.chipActive]}
+            onPress={() => setSubjectId(null)}>
+            <Text style={[styles.chipText, noSubject && styles.chipTextActive]}>Sem matéria</Text>
+          </Pressable>
+
+          {subjects.map((s) => {
+            const active = s.id === selectedSubject?.id;
+            return (
+              <Pressable
+                key={s.id}
+                style={[styles.chip, { borderColor: s.color }, active && { backgroundColor: s.color }]}
+                onPress={() => setSubjectId(s.id)}>
+                <Ionicons name={toIcon(s.icon)} size={16} color={active ? '#fff' : s.color} />
+                <Text style={[styles.chipText, { color: active ? '#fff' : s.color }]}>{s.name}</Text>
+              </Pressable>
+            );
+          })}
+
+          <Pressable style={[styles.chip, styles.chipNew]} onPress={() => router.push('/materias')}>
+            <Ionicons name="add" size={16} color={colors.primary} />
+            <Text style={styles.chipText}>Nova</Text>
+          </Pressable>
+        </ScrollView>
+
+        <Text style={styles.label}>Ícone</Text>
+        <Text style={styles.hint}>
+          Aparece no card da atividade. Sem escolha, usa o ícone da matéria.
+        </Text>
+        <View style={{ marginBottom: 18 }}>
+          <IconPicker
+            value={icon}
+            onChange={(i) => setIcon(i === icon ? null : i)}
+            color={previewColor}
+          />
+        </View>
 
         <Text style={styles.label}>Descrição</Text>
         <TextInput
@@ -207,15 +287,19 @@ export default function NovaAtividade() {
               <Pressable
                 key={p}
                 onPress={() => setPriority(p)}
-                style={[
-                  styles.priorityPill,
-                  { backgroundColor: active ? c.fg : c.bg },
-                ]}>
+                style={[styles.priorityPill, { backgroundColor: active ? c.fg : c.bg }]}>
                 <Text style={[styles.priorityText, { color: active ? '#fff' : c.fg }]}>{p}</Text>
               </Pressable>
             );
           })}
         </View>
+
+        {priority === 'Alta' && alarmEnabled && (
+          <Text style={[styles.hint, { marginTop: -8, marginBottom: 18 }]}>
+            ⏰ Prioridade alta: a entrega entra na agenda do celular, com alarmes 1 dia antes,
+            1 hora antes e na hora.
+          </Text>
+        )}
 
         <View style={styles.reminderRow}>
           <View style={{ flex: 1 }}>
@@ -252,14 +336,23 @@ export default function NovaAtividade() {
 
         <Button label="Salvar atividade" onPress={handleSave} loading={saving} />
       </ScrollView>
-    </View>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
   screenTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 20 },
-  hint: { fontSize: 12, color: colors.muted, marginTop: -8, marginBottom: 18 },
   label: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 8 },
+  hint: { fontSize: 12, color: colors.muted, marginBottom: 10 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, height: 38, borderRadius: 19,
+    borderWidth: 1.5, borderColor: colors.secondary, backgroundColor: '#fff',
+  },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  chipTextActive: { color: '#fff' },
+  chipNew: { borderStyle: 'dashed', borderColor: colors.primary },
   textarea: {
     backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.secondary,
     borderRadius: 14, padding: 14, minHeight: 96, fontSize: 16,
