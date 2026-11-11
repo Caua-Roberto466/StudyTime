@@ -6,9 +6,14 @@ import { Activity } from '@/database/db';
 import { formatDue } from '@/utils/dates';
 import { parseAttachments } from '@/utils/attachments';
 
-type Props = { activity: Activity; onToggle?: () => void };
+type Props = {
+  activity: Activity;
+  onToggle?: () => void;
+  onPress?: () => void;
+  onLongPress?: () => void;
+};
 
-export function ActivityCard({ activity, onToggle }: Props) {
+export function ActivityCard({ activity, onToggle, onPress, onLongPress }: Props) {
   const p = colors.priority[activity.priority];
   const done = activity.completed === 1;
 
@@ -21,7 +26,15 @@ export function ActivityCard({ activity, onToggle }: Props) {
   const subtitle = activity.subject_name ? `${activity.subject_name} · ${due}` : due;
 
   return (
-    <View style={[styles.card, { borderLeftColor: p.fg }, done && styles.cardDone]}>
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={({ pressed }) => [
+        styles.card,
+        { borderLeftColor: p.fg },
+        done && styles.cardDone,
+        onPress && pressed && { opacity: 0.85 },
+      ]}>
       <View style={[styles.icon, { backgroundColor: tint + '1A' }]}>
         <Ionicons name={iconName} size={22} color={tint} />
       </View>
@@ -56,7 +69,7 @@ export function ActivityCard({ activity, onToggle }: Props) {
           />
         </Pressable>
       )}
-    </View>
+    </Pressable>
   );
 }
 

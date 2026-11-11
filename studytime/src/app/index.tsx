@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors } from '@/theme/colors';
 import { useAuth } from '@/contexts/auth';
 import {
-  Activity, getUpcomingActivities, getWeekProgress} from '@/database/db';
+  Activity, deleteActivity, getUpcomingActivities, getWeekProgress} from '@/database/db';
 import { getWeekRange, toLocalISO } from '@/utils/dates';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ProgressRing } from '@/components/ProgressingRing';
@@ -47,8 +47,30 @@ export default function Home() {
   const ratio = progress.total > 0 ? progress.done / progress.total : 0;
   const firstName = user.name.split(' ')[0];
 
+  async function handleDelete(a: Activity) {
+    if (userId === undefined) return;
+    Alert.alert(
+      'Excluir atividade',
+      'Deseja realmente excluir esta atividade?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteActivity(a.id, userId);
+            } catch {
+              Alert.alert('Erro', 'Não foi possível excluir a atividade.');
+            }
+          },
+        },
+      ]
+    );
+  }
+
   return (
-    <ScreenLayout header={false}>
+    <ScreenLayout>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
@@ -58,13 +80,15 @@ export default function Home() {
             <Text style={styles.hello}>Olá, {firstName} 👋</Text>
             <Text style={styles.subtitle}>Vamos estudar hoje?</Text>
           </View>
-          <Pressable hitSlop={10}>
+          <Pressable
+            hitSlop={10}
+            onPress={() => router.push('/notificacoes')}>
             <Ionicons name="notifications-outline" size={26} color={colors.text} />
           </Pressable>
         </View>
 
         {/* progresso da semana */}
-        <View style={styles.progressCard}>
+        <Pressable onPress={() => router.push('/progresso')} style={({ pressed }) => [styles.progressCard, pressed && { opacity: 0.85 }]}>
           <Text style={styles.cardTitle}>Seu progresso da semana</Text>
           <View style={styles.progressRow}>
             <ProgressRing progress={ratio} />
@@ -75,12 +99,12 @@ export default function Home() {
               <Text style={styles.progressSmall}>atividades{'\n'}concluídas</Text>
             </View>
           </View>
-        </View>
+        </Pressable>
 
         {/* próximas atividades */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Próximas atividades</Text>
-          <Pressable hitSlop={10}>
+          <Pressable hitSlop={10} onPress={() => router.push('/estudar')}>
             <Text style={styles.link}>Ver todas →</Text>
           </Pressable>
         </View>
@@ -88,7 +112,14 @@ export default function Home() {
         {upcoming.length === 0 ? (
           <Text style={styles.empty}>Nenhuma atividade pendente. Adicione a primeira abaixo 👇</Text>
         ) : (
-          upcoming.map((a) => <ActivityCard key={a.id} activity={a} />)
+          upcoming.map((a) => (
+            <ActivityCard
+              key={a.id}
+              activity={a}
+              onPress={() => router.push({ pathname: '/atividade/[id]', params: { id: String(a.id) } })}
+              onLongPress={() => handleDelete(a)}
+            />
+          ))
         )}
 
         <Pressable
@@ -107,7 +138,7 @@ const styles = StyleSheet.create({
   greeting: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   hello: { fontSize: 24, fontWeight: '800', color: colors.text },
   subtitle: { fontSize: 14, color: colors.muted, marginTop: 2 },
-  progressCard: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, marginBottom: 24 },
+  progressCard: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, marginBottom: 24, shadowColor: '#7C3AED', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   cardTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 12 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 20 },
   progressBig: { fontSize: 20, fontWeight: '800', color: colors.text },

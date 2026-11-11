@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
+import { removeDeadlineFromCalendar } from '@/utils/deviceCalendar';
 
 /* ───────────── Tipos ───────────── */
 
@@ -33,6 +34,15 @@ export type Activity = {
 
 export type Subject = { id: number; name: string; icon: string; color: string };
 export type SubjectWithCount = Subject & { total: number; pending: number };
+
+// Notificação registrada (ex.: entrega de atividade). Ligada à atividade via activities.notifications_id.
+export type Notification = {
+  id: number;
+  notification_id: string | null;
+  title: string;
+  sent: number;               // 0 ou 1
+  scheduled_date: string;
+};
 
 /* ───────────── Conexão e migrações ───────────── */
 
@@ -279,6 +289,19 @@ export async function getAllActivities(userId: number) {
   );
 }
 
+// Notificações do usuário (via JOIN com as atividades que as originaram)
+export async function getNotifications(userId: number) {
+  const db = await getDb();
+  return db.getAllAsync<Notification>(
+    `SELECT n.id, n.notification_id, n.title, n.sent, n.scheduled_date
+       FROM notifications n
+       JOIN activities a ON a.notifications_id = n.id
+      WHERE a.user_id = ?
+      ORDER BY n.scheduled_date DESC`,
+    userId
+  );
+}
+
 export async function getActivitiesBySubject(userId: number, subjectId: number) {
   const db = await getDb();
   return db.getAllAsync<Activity>(
@@ -310,7 +333,21 @@ export async function createActivity(a: NewActivity) {
     a.name, a.dueAt, a.description, a.priority, a.reminder ? 1 : 0,
     JSON.stringify(a.images), a.userId, a.subjectId, a.icon
   );
-  return result.lastInsertRowId;
+  const activityId = result.lastInsertRowId;
+
+  // lembrete ligado: registra a notificação e guarda o vínculo com a atividade
+  if (a.reminder) {
+    const notif = await db.runAsync(
+      'INSERT INTO notifications (notification_id, title, sent, scheduled_date) VALUES (?, ?, 0, ?)',
+      String(activityId), a.name, a.dueAt
+    );
+    await db.runAsync(
+      'UPDATE activities SET notifications_id = ? WHERE id = ?',
+      notif.lastInsertRowId, activityId
+    );
+  }
+
+  return activityId;
 }
 
 export async function setActivityCompleted(id: number, userId: number, completed: boolean) {
@@ -329,6 +366,56 @@ export async function setCalendarEventId(
     'UPDATE activities SET calendar_event_id = ? WHERE id = ? AND user_id = ?',
     eventId, activityId, userId
   );
+}
+
+// Busca uma atividade pelo id (com a matéria via JOIN)
+export async function getActivity(userId: number, activityId: number): Promise<Activity | null> {
+  const db = await getDb();
+  return db.getFirstAsync<Activity>(
+    `${ACTIVITY_SELECT}
+      WHERE a.id = ? AND a.user_id = ?`,
+    activityId, userId
+  );
+}
+
+export type ActivityInput = {
+  name: string;
+  dueAt: string;                 // '2026-11-03T14:00'
+  description: string | null;
+  priority: Priority;
+  reminder: boolean;
+  subjectId: number | null;
+  icon: string | null;
+};
+
+// Atualiza uma atividade (usado pela página de edição)
+export async function updateActivity(id: number, userId: number, data: ActivityInput) {
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE activities
+        SET name = ?, data_entrega = ?, description = ?, priority = ?, reminder = ?,
+            subject_id = ?, icon = ?
+      WHERE id = ? AND user_id = ?`,
+    data.name, data.dueAt, data.description, data.priority, data.reminder ? 1 : 0,
+    data.subjectId, data.icon, id, userId
+  );
+}
+
+// Exclui uma atividade do usuário (limpa também o evento da agenda, se houver)
+export async function deleteActivity(id: number, userId: number) {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ calendar_event_id: string | null }>(
+    'SELECT calendar_event_id FROM activities WHERE id = ? AND user_id = ?',
+    id, userId
+  );
+  if (row?.calendar_event_id) {
+    try {
+      await removeDeadlineFromCalendar(row.calendar_event_id);
+    } catch {
+      // evento já foi apagado: ignorar
+    }
+  }
+  await db.runAsync('DELETE FROM activities WHERE id = ? AND user_id = ?', id, userId);
 }
 
 /* ───────────── Matérias ───────────── */

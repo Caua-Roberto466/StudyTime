@@ -102,7 +102,12 @@ export default function MateriaDetalhe() {
               <Text style={styles.empty}>Nenhuma atividade nesta matéria ainda.</Text>
             ) : (
               activities.map((a) => (
-                <ActivityCard key={a.id} activity={a} onToggle={() => toggle(a)} />
+                <ActivityCard
+                  key={a.id}
+                  activity={a}
+                  onToggle={() => toggle(a)}
+                  onPress={() => router.push({ pathname: '/atividade/[id]', params: { id: String(a.id) } })}
+                />
               ))
             )}
 

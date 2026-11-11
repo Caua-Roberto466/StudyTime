@@ -1,4 +1,5 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
@@ -27,7 +28,16 @@ export function Header({ onBack }: Props) {
         <Text style={styles.title}>StudyTime</Text>
       </View>
 
-      {user && <Avatar name={user.name} avatar={user.avatar} size={36} />}
+      {user && (
+        <View style={styles.side}>
+          <Pressable onPress={() => router.push('/configuracoes')} hitSlop={8}>
+            <Ionicons name="settings-outline" size={24} color={colors.background} />
+          </Pressable>
+          <Pressable onPress={() => router.push('/perfil')} hitSlop={8}>
+            <Avatar name={user.name} avatar={user.avatar} size={36} />
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -44,4 +54,5 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 32, height: 32 },
   title: { color: colors.background, fontSize: 20, fontWeight: '700' },
+  side: { flexDirection: 'row', alignItems: 'center', gap: 16 },
 });

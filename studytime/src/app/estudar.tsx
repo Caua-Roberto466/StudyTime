@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Redirect, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { colors } from '@/theme/colors';
 import { useAuth } from '@/contexts/auth';
@@ -110,6 +111,13 @@ export default function Estudar() {
 
         {mode === 'lista' ? (
           <>
+            <Pressable
+              style={styles.addRow}
+              onPress={() => router.push('/nova-atividade')}>
+              <Ionicons name="add" size={20} color={colors.primary} />
+              <Text style={styles.addText}>Adicionar atividade</Text>
+            </Pressable>
+
             <Input
               icon="search-outline"
               placeholder="Buscar atividades..."
@@ -139,7 +147,12 @@ export default function Estudar() {
               </Text>
             ) : (
               visible.map((a) => (
-                <ActivityCard key={a.id} activity={a} onToggle={() => toggle(a)} />
+                <ActivityCard
+                  key={a.id}
+                  activity={a}
+                  onToggle={() => toggle(a)}
+                  onPress={() => router.push({ pathname: '/atividade/[id]', params: { id: String(a.id) } })}
+                />
               ))
             )}
           </>
@@ -159,7 +172,12 @@ export default function Estudar() {
               <Text style={styles.empty}>Nada marcado para este dia.</Text>
             ) : (
               dayActivities.map((a) => (
-                <ActivityCard key={a.id} activity={a} onToggle={() => toggle(a)} />
+                <ActivityCard
+                  key={a.id}
+                  activity={a}
+                  onToggle={() => toggle(a)}
+                  onPress={() => router.push({ pathname: '/atividade/[id]', params: { id: String(a.id) } })}
+                />
               ))
             )}
           </>
@@ -172,6 +190,11 @@ export default function Estudar() {
 const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 32 },
   title: { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: 16 },
+  addRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: colors.surface, borderRadius: 14, height: 52, marginBottom: 16,
+  },
+  addText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
   segment: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderRadius: 14, padding: 4, marginBottom: 18,

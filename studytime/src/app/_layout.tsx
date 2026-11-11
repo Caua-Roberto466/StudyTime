@@ -36,6 +36,10 @@ function Root() {
         }}>
         <Stack.Screen name="nova-atividade" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="materia/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="atividade/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="notificacoes" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="configuracoes" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="progresso" options={{ animation: 'slide_from_right' }} />
       </Stack>
       {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
     </View>
