@@ -16,37 +16,38 @@ export function HistoryItem({ activity, onPress }: Props) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}>
+      style={({ pressed }) => [styles.row, pressed && { opacity: 0.8 }]}>
       <View style={[styles.icon, { backgroundColor: tint + '1A' }]}>
         <Ionicons name={iconName} size={20} color={tint} />
         <View style={styles.check}>
-          <Ionicons name="checkmark" size={10} color="#fff" />
+          <Ionicons name="checkmark" size={10} color="#FFFFFF" />
         </View>
       </View>
-
-      <View style={{ flex: 1 }}>
+      <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>{activity.name}</Text>
         <Text style={styles.meta} numberOfLines={1}>{activity.subject_name ?? 'Sem matéria'}</Text>
       </View>
-
       <Text style={styles.date}>{formatShortDate(activity.data_entrega)}</Text>
+      <Ionicons name="chevron-forward" size={15} color="#A99FBA" />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.card, borderRadius: 14, padding: 12, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 11,
+    backgroundColor: colors.card, borderRadius: 17, padding: 12,
+    marginBottom: 9, borderWidth: 1, borderColor: colors.border,
   },
-  icon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   check: {
     position: 'absolute', right: -4, bottom: -4,
-    width: 18, height: 18, borderRadius: 9,
+    width: 19, height: 19, borderRadius: 10,
     backgroundColor: colors.success, borderWidth: 2, borderColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
-  title: { fontSize: 14, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  date: { fontSize: 12, fontWeight: '600', color: colors.muted },
+  info: { flex: 1, minWidth: 0 },
+  title: { fontSize: 14, fontWeight: '800', color: colors.text },
+  meta: { fontSize: 12, color: colors.muted, marginTop: 3 },
+  date: { fontSize: 11, fontWeight: '700', color: colors.muted },
 });
